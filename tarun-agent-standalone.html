@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tarun's Daily AI Agent</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#1B2A4A;--blue:#2563EB;--blue-l:#DBEAFE;--gold:#F59E0B;--gold-l:#FEF3C7;
+  --green:#166534;--green-l:#DCFCE7;--red:#991B1B;--red-l:#FEE2E2;
+  --bg:#f8fafc;--surface:#ffffff;--surface2:#f1f5f9;--border:#e2e8f0;
+  --txt:#0f172a;--txt2:#64748b;--radius:12px;--radius-sm:8px;
+}
+@media(prefers-color-scheme:dark){
+  :root{--bg:#0f172a;--surface:#1e293b;--surface2:#0f172a;--border:#334155;--txt:#f1f5f9;--txt2:#94a3b8}
+}
+body{background:var(--bg);color:var(--txt);font-family:'Syne',sans-serif;min-height:100vh;padding:1.5rem 1rem}
+#app{max-width:640px;margin:0 auto}
+
+.top-bar{display:flex;align-items:center;gap:12px;margin-bottom:1.5rem}
+.avatar{width:46px;height:46px;border-radius:50%;background:var(--navy);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;flex-shrink:0}
+.top-info h1{font-size:17px;font-weight:700;color:var(--txt);line-height:1.2}
+.top-info p{font-size:11px;color:var(--txt2);font-family:'DM Mono',monospace;margin-top:2px}
+.date-badge{margin-left:auto;background:var(--blue-l);color:#1e40af;font-size:11px;padding:5px 11px;border-radius:20px;font-family:'DM Mono',monospace;white-space:nowrap}
+@media(prefers-color-scheme:dark){.date-badge{background:#1e3a5f;color:#93c5fd}}
+
+.api-setup{background:var(--surface);border:1.5px solid var(--gold);border-radius:var(--radius);padding:16px;margin-bottom:1rem}
+.api-setup h3{font-size:13px;font-weight:600;color:var(--gold);margin-bottom:8px}
+.api-setup p{font-size:12px;color:var(--txt2);margin-bottom:10px;line-height:1.5}
+.api-input{width:100%;padding:9px 12px;font-family:'DM Mono',monospace;font-size:12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface2);color:var(--txt);outline:none}
+.api-save-btn{margin-top:8px;padding:8px 18px;font-family:'Syne',sans-serif;font-size:12px;font-weight:600;background:var(--gold);border:none;border-radius:20px;color:#fff;cursor:pointer;width:100%}
+.api-saved{display:none;font-size:11px;color:var(--green);font-family:'DM Mono',monospace;margin-top:6px;text-align:center}
+
+.phase-bar{background:var(--surface);border-radius:var(--radius);padding:14px 16px;margin-bottom:1rem;border:1px solid var(--border)}
+.phase-label{font-size:10px;color:var(--txt2);font-family:'DM Mono',monospace;margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em}
+.phase-name{font-size:14px;font-weight:600;color:var(--txt)}
+.phase-progress{margin-top:8px;height:4px;background:var(--border);border-radius:2px;overflow:hidden}
+.phase-fill{height:100%;background:var(--blue);border-radius:2px}
+
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:1rem}
+.stat-card{background:var(--surface);border-radius:var(--radius-sm);padding:12px;text-align:center;border:1px solid var(--border)}
+.stat-num{font-size:24px;font-weight:700;color:var(--txt)}
+.stat-lbl{font-size:10px;color:var(--txt2);font-family:'DM Mono',monospace;margin-top:2px}
+
+.section-title{font-size:10px;font-weight:600;color:var(--txt2);letter-spacing:.08em;text-transform:uppercase;font-family:'DM Mono',monospace;margin:1.25rem 0 .5rem}
+
+.task-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:13px 15px;margin-bottom:8px;display:flex;align-items:flex-start;gap:12px;cursor:pointer;transition:border-color .15s}
+.task-card:hover{border-color:#94a3b8}
+.task-card.done{opacity:.5}
+.task-card.done .task-title{text-decoration:line-through}
+.check-ring{width:22px;height:22px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;transition:all .2s}
+.task-card.done .check-ring{background:var(--green);border-color:var(--green)}
+.check-tick{display:none;color:#fff;font-size:11px;font-weight:700}
+.task-card.done .check-tick{display:block}
+.task-body{flex:1;min-width:0}
+.task-meta{display:flex;align-items:center;gap:6px;margin-bottom:3px}
+.task-title{font-size:13px;font-weight:600;color:var(--txt);line-height:1.3}
+.task-sub{font-size:11px;color:var(--txt2);margin-top:2px;line-height:1.4}
+.tag{font-size:9px;padding:2px 7px;border-radius:10px;font-family:'DM Mono',monospace;font-weight:600;white-space:nowrap}
+.tag-ai{background:var(--blue-l);color:#1e40af}
+.tag-brand{background:var(--gold-l);color:#92400e}
+.tag-client{background:var(--green-l);color:#166534}
+.tag-learn{background:#ede9fe;color:#5b21b6}
+.task-time{font-size:10px;color:var(--txt2);font-family:'DM Mono',monospace;margin-left:auto;white-space:nowrap}
+
+.progress-summary{display:flex;align-items:center;gap:10px;font-size:11px;color:var(--txt2);margin-top:.75rem;font-family:'DM Mono',monospace}
+.prog-bar{flex:1;height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.prog-fill{height:100%;background:var(--gold);border-radius:2px;transition:width .4s}
+
+.ai-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-top:1rem}
+.ai-header{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.ai-dot{width:8px;height:8px;border-radius:50%;background:var(--blue);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.ai-label{font-size:11px;font-weight:700;color:var(--blue);font-family:'DM Mono',monospace;letter-spacing:.04em}
+#ai-msg{font-size:13px;color:var(--txt);line-height:1.7;min-height:44px;white-space:pre-wrap}
+#ai-msg.loading{color:var(--txt2);font-style:italic}
+
+.action-row{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}
+.action-btn{font-family:'Syne',sans-serif;font-size:11px;font-weight:600;padding:7px 13px;border-radius:20px;border:1px solid var(--border);background:var(--surface2);color:var(--txt);cursor:pointer;transition:all .15s}
+.action-btn:hover{background:var(--blue-l);border-color:#93c5fd;color:#1e40af}
+
+.prompt-area{margin-top:12px;display:flex;gap:8px}
+.prompt-input{flex:1;padding:10px 13px;font-family:'Syne',sans-serif;font-size:13px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface2);color:var(--txt);outline:none}
+.prompt-input:focus{border-color:var(--blue)}
+.send-btn{padding:10px 18px;font-family:'Syne',sans-serif;font-size:13px;font-weight:600;border-radius:var(--radius-sm);border:none;background:var(--navy);color:#fff;cursor:pointer;white-space:nowrap;transition:background .15s}
+.send-btn:hover{background:var(--blue)}
+.send-btn:disabled{opacity:.4;cursor:default}
+
+.footer{text-align:center;margin-top:2rem;font-size:10px;color:var(--txt2);font-family:'DM Mono',monospace}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div class="top-bar">
+    <div class="avatar">TV</div>
+    <div class="top-info">
+      <h1>Tarun's Daily Agent</h1>
+      <p>Powered by Claude · ₹30L Roadmap</p>
+    </div>
+    <div class="date-badge" id="today-date"></div>
+  </div>
+
+  <div class="api-setup" id="api-setup">
+    <h3>⚡ One-time setup — enter your Anthropic API key</h3>
+    <p>Your key is stored only in your browser (localStorage). It never leaves your device except to call the Anthropic API directly.</p>
+    <input class="api-input" type="password" id="api-key-input" placeholder="sk-ant-api03-..." />
+    <button class="api-save-btn" onclick="saveKey()">Save & Start Agent</button>
+    <div class="api-saved" id="api-saved">✓ Key saved — agent is live!</div>
+    <p style="margin-top:10px;font-size:11px;color:var(--txt2)">Get your key at <a href="https://console.anthropic.com" target="_blank" style="color:var(--blue)">console.anthropic.com</a> → API Keys → Create Key</p>
+  </div>
+
+  <div class="phase-bar">
+    <div class="phase-label">Current phase</div>
+    <div class="phase-name">Phase 1: AI Foundation (May–Jun 2025)</div>
+    <div class="phase-progress"><div class="phase-fill" style="width:8%"></div></div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card"><div class="stat-num" id="done-count">0</div><div class="stat-lbl">Done today</div></div>
+    <div class="stat-card"><div class="stat-num" id="total-count">0</div><div class="stat-lbl">Tasks total</div></div>
+    <div class="stat-card"><div class="stat-num" id="streak-count">1</div><div class="stat-lbl">Day streak</div></div>
+  </div>
+
+  <div class="section-title">Today's tasks</div>
+  <div id="task-list"></div>
+  <div class="progress-summary">
+    <span id="prog-label">0 of 0 complete</span>
+    <div class="prog-bar"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+  </div>
+
+  <div class="section-title">Your AI coach</div>
+  <div class="ai-box">
+    <div class="ai-header">
+      <div class="ai-dot"></div>
+      <div class="ai-label">Claude Agent</div>
+    </div>
+    <div id="ai-msg" class="loading">Enter your API key above to activate your agent...</div>
+    <div class="action-row" id="action-row"></div>
+    <div class="prompt-area">
+      <input class="prompt-input" type="text" id="user-prompt" placeholder="Ask anything... 'Write my LinkedIn post'" onkeydown="if(event.key==='Enter')askAgent()" />
+      <button class="send-btn" id="send-btn" onclick="askAgent()">Send ↗</button>
+    </div>
+  </div>
+
+  <div class="footer">Tarun Vaid · AI Career Agent · Built with Claude API</div>
+</div>
+
+<script>
+const TODAY = new Date();
+const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const MONS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const DOW = TODAY.getDay();
+document.getElementById('today-date').textContent = `${DAYS[DOW]}, ${TODAY.getDate()} ${MONS[TODAY.getMonth()]} ${TODAY.getFullYear()}`;
+
+const ALL_TASKS = [
+  {id:'t1',title:'Use Claude for 1 HCL work task',sub:'Executive brief, campaign copy, or strategy analysis',tag:'ai',time:'20 min',always:true},
+  {id:'t2',title:'Track 1 AI-in-marketing trend',sub:'Claude summarises top stories for you',tag:'learn',time:'10 min',always:true},
+  {id:'t3',title:'Engage with 3 LinkedIn posts in your niche',sub:'Add real insight — not just reactions',tag:'brand',time:'10 min',always:true},
+  {id:'t4',title:'Log today\'s Claude win',sub:'Note 1 thing AI helped you do faster — builds your story',tag:'ai',time:'5 min',always:true},
+  {id:'t5',title:'Publish LinkedIn post',sub:'Claude has your draft ready — personalise & post',tag:'brand',time:'15 min',days:[1,3,5]},
+  {id:'t6',title:'Send 5 personalised prospect messages',sub:'Claude crafts each message based on their company',tag:'client',time:'30 min',days:[2]},
+  {id:'t7',title:'Review pipeline & follow up with leads',sub:'Claude writes follow-up emails for warm leads',tag:'client',time:'20 min',days:[4]},
+  {id:'t8',title:'Complete 1 Anthropic Academy lesson',sub:'Current priority: Claude 101 → AI Fluency → MCP',tag:'learn',time:'30 min',weekend:true},
+  {id:'t9',title:'Plan next week\'s content & outreach',sub:'Claude builds your Mon–Fri schedule in 10 min',tag:'brand',time:'20 min',weekend:true},
+];
+
+const isWeekend = DOW===0||DOW===6;
+const tasks = ALL_TASKS.filter(t=>t.always||(t.weekend&&isWeekend)||(t.days&&t.days.includes(DOW)));
+const done = new Set(JSON.parse(localStorage.getItem('done_'+TODAY.toDateString())||'[]'));
+let streak = parseInt(localStorage.getItem('streak')||'1');
+
+function renderTasks(){
+  const list = document.getElementById('task-list');
+  list.innerHTML='';
+  tasks.forEach(t=>{
+    const d=done.has(t.id);
+    const tagMap={ai:'tag-ai',brand:'tag-brand',client:'tag-client',learn:'tag-learn'};
+    const tagLabel={ai:'AI Task',brand:'Brand',client:'Client',learn:'Learn'};
+    list.innerHTML+=`<div class="task-card${d?' done':''}" onclick="toggle('${t.id}')">
+      <div class="check-ring"><span class="check-tick">✓</span></div>
+      <div class="task-body">
+        <div class="task-meta"><span class="tag ${tagMap[t.tag]}">${tagLabel[t.tag]}</span><span class="task-time">${t.time}</span></div>
+        <div class="task-title">${t.title}</div>
+        <div class="task-sub">${t.sub}</div>
+      </div>
+    </div>`;
+  });
+  updateStats();
+}
+
+function toggle(id){
+  if(done.has(id))done.delete(id);else done.add(id);
+  localStorage.setItem('done_'+TODAY.toDateString(),JSON.stringify([...done]));
+  renderTasks();
+}
+
+function updateStats(){
+  const d=done.size,t=tasks.length;
+  document.getElementById('done-count').textContent=d;
+  document.getElementById('total-count').textContent=t;
+  document.getElementById('streak-count').textContent=streak;
+  document.getElementById('prog-label').textContent=`${d} of ${t} complete`;
+  document.getElementById('prog-fill').style.width=t?`${Math.round(d/t*100)}%`:'0%';
+}
+
+renderTasks();
+
+function saveKey(){
+  const k=document.getElementById('api-key-input').value.trim();
+  if(!k.startsWith('sk-ant')){alert('Please enter a valid Anthropic API key (starts with sk-ant)');return;}
+  localStorage.setItem('anthropic_key',k);
+  document.getElementById('api-saved').style.display='block';
+  setTimeout(()=>{document.getElementById('api-setup').style.display='none';initAgent();},800);
+}
+
+function getKey(){return localStorage.getItem('anthropic_key')||'';}
+
+async function callClaude(prompt){
+  const key=getKey();
+  if(!key)throw new Error('No API key');
+  const res=await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+    body:JSON.stringify({
+      model:'claude-sonnet-4-20250514',
+      max_tokens:800,
+      system:`You are Tarun Vaid's personal AI career coach and daily task agent. Tarun is an Associate General Manager at HCLSoftware with 14+ years in strategic marketing, GTM, and executive communications. He is building a side consultancy to become a Fractional CMO earning ₹30 lakh/month by April 2026. His roadmap phases: Phase 1 (May-Jun 2025): AI Foundation — completing Anthropic Academy courses. Phase 2 (Jun-Aug 2025): Personal Brand — 3x LinkedIn posts/week. Phase 3 (Aug-Oct 2025): First client — fractional CMO retainer at ₹1.5L/month. Phase 4 (Oct-Dec 2025): Scale to 3 clients. Phase 5 (Jan-Feb 2026): Course launch — AI for Marketing Leaders. Phase 6 (Feb-Apr 2026): ₹30L/month via 6 retainers + GTM sprints + training. Revenue streams: Fractional CMO retainers, AI GTM Sprints (₹1.5L/sprint), course (₹15K/student), corporate training (₹2L/session). Be specific, warm, and actionable. Under 120 words unless writing actual content like posts or emails.`,
+      messages:[{role:'user',content:prompt}]
+    })
+  });
+  if(!res.ok)throw new Error(await res.text());
+  const data=await res.json();
+  return data.content?.[0]?.text||'No response';
+}
+
+const QUICK=[
+  {label:'Write LinkedIn post',prompt:'Write a LinkedIn post for Tarun for today. Topic: how AI is transforming B2B GTM strategy, from his 14 years of experience. Under 200 words, punchy, personal, real insight. 2-3 hashtags max.'},
+  {label:'Draft outreach DM',prompt:'Write a personalised LinkedIn DM Tarun can send to a CMO or founder of an Indian B2B SaaS company. Offer a free 30-min AI GTM Audit. Under 80 words, warm and human — not salesy.'},
+  {label:"Priority check",prompt:`Today is ${DAYS[DOW]}. What is the single most important action Tarun should take today to stay on track toward ₹30L/month by April 2026? Be very specific — give one concrete action he can complete in 30 minutes.`},
+  {label:'Motivate me',prompt:"Give Tarun a specific, grounded pep talk. Remind him of his unique edge (14 years experience + AI fluency), the market gap he can dominate, and why the next 6 months will change his financial life. Under 100 words."},
+  {label:'Client pitch help',prompt:'Help Tarun craft a 3-sentence elevator pitch for his Fractional CMO service. Target audience: founders or CMOs of Indian B2B tech companies with 50-500 employees. Focus on AI-powered GTM execution and his HCLSoftware pedigree.'},
+];
+
+function initAgent(){
+  const row=document.getElementById('action-row');
+  row.innerHTML='';
+  QUICK.forEach(a=>{
+    const btn=document.createElement('button');
+    btn.className='action-btn';
+    btn.textContent=a.label+' ↗';
+    btn.onclick=()=>runPrompt(a.prompt);
+    row.appendChild(btn);
+  });
+  const dayCtx=`Today is ${DAYS[DOW]}, ${TODAY.getDate()} ${MONS[TODAY.getMonth()]} ${TODAY.getFullYear()}. Give Tarun a sharp 2-sentence morning briefing: what to focus on today based on his Phase 1 roadmap, and one specific win to aim for. End with a one-line motivator.`;
+  runPrompt(dayCtx,true);
+}
+
+async function runPrompt(prompt,isBriefing=false){
+  const el=document.getElementById('ai-msg');
+  el.className='loading';
+  el.textContent=isBriefing?'Generating your morning briefing...':'Working on it...';
+  try{
+    const msg=await callClaude(prompt);
+    el.className='';
+    el.textContent=msg;
+  }catch(e){
+    el.className='';
+    el.textContent='Could not reach the agent. Check your API key or internet connection.';
+  }
+}
+
+async function askAgent(){
+  const inp=document.getElementById('user-prompt');
+  const btn=document.getElementById('send-btn');
+  const q=inp.value.trim();
+  if(!q||!getKey())return;
+  btn.disabled=true;
+  inp.value='';
+  await runPrompt(q);
+  btn.disabled=false;
+}
+
+if(getKey()){
+  document.getElementById('api-setup').style.display='none';
+  initAgent();
+}
+</script>
+</body>
+</html>
